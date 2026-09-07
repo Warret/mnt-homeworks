@@ -1,0 +1,19 @@
+all:
+  children:
+    clickhouse:
+      hosts:
+        ch-server:
+          ansible_host: 89.169.170.116
+    vector:
+      hosts:
+        vec-server:
+          ansible_host: 111.88.159.86
+    lighthouse:
+      hosts:
+        lh-server:
+          ansible_host: 84.201.179.213
+
+  vars:
+    ansible_user: ubuntu
+    ansible_ssh_private_key_file: /root/.ssh/ssh-key-1788258569046
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"

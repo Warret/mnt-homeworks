@@ -1,0 +1,160 @@
+---
+# PLAY 1: Установка и настройка ClickHouse
+- name: Install and configure ClickHouse
+  hosts: clickhouse
+  become: true
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+
+    - name: Download ClickHouse GPG key
+      ansible.builtin.get_url:
+        url: https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key
+        dest: /tmp/clickhouse.key
+        mode: '0644'
+
+    - name: Convert and install ClickHouse GPG key
+      ansible.builtin.shell: |
+        gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg /tmp/clickhouse.key
+      args:
+        creates: /usr/share/keyrings/clickhouse-keyring.gpg
+
+    - name: Add ClickHouse repository
+      ansible.builtin.copy:
+        content: "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main"
+        dest: /etc/apt/sources.list.d/clickhouse.list
+        mode: '0644'
+
+    - name: Update apt cache with ClickHouse repo
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Install ClickHouse packages
+      ansible.builtin.apt:
+        name:
+          - clickhouse-server
+          - clickhouse-client
+        state: present
+
+    - name: Start and enable ClickHouse service
+      ansible.builtin.service:
+        name: clickhouse-server
+        state: started
+        enabled: true
+
+# PLAY 2: Установка и настройка Vector
+- name: Install and configure Vector
+  hosts: vector
+  become: true
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Download Vector .deb package
+      ansible.builtin.get_url:
+        url: https://packages.timber.io/vector/0.38.0/vector_0.38.0-1_amd64.deb
+        dest: /tmp/vector.deb
+        mode: '0644'
+
+    - name: Install Vector from deb package
+      ansible.builtin.apt:
+        deb: /tmp/vector.deb
+        state: present
+
+    - name: Deploy Vector configuration from template
+      ansible.builtin.template:
+        src: vector.yaml.j2
+        dest: /etc/vector/vector.yaml
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart vector
+
+    - name: Start and enable Vector service
+      ansible.builtin.service:
+        name: vector
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Restart vector
+      ansible.builtin.service:
+        name: vector
+        state: restarted
+
+# PLAY 3: Установка и настройка Lighthouse
+- name: Install and configure Lighthouse
+  hosts: lighthouse
+  become: true
+  tasks:
+    - name: Update apt cache and install nginx and git
+      ansible.builtin.apt:
+        name:
+          - nginx
+          - git
+        state: present
+        update_cache: true
+
+    - name: Remove default nginx site to prevent port 80 conflicts
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Restart nginx
+
+    - name: Clone or update Lighthouse repository
+      ansible.builtin.git:
+        repo: https://github.com/VKCOM/lighthouse.git
+        dest: /var/www/html/lighthouse
+        version: master
+        force: true
+      environment:
+        # Официальный workaround Ansible для Git dubious ownership
+        GIT_CONFIG_COUNT: "1"
+        GIT_CONFIG_KEY_0: "safe.directory"
+        GIT_CONFIG_VALUE_0: "/var/www/html/lighthouse"
+
+    - name: Set correct ownership for Lighthouse files (for Nginx)
+      ansible.builtin.file:
+        path: /var/www/html/lighthouse
+        owner: www-data
+        group: www-data
+        recurse: true
+
+    - name: Deploy nginx config from template
+      ansible.builtin.template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/sites-available/lighthouse.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart nginx
+
+    - name: Enable nginx site (create symlink)
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/lighthouse.conf
+        dest: /etc/nginx/sites-enabled/lighthouse.conf
+        state: link
+      notify: Restart nginx
+
+    - name: Start and enable nginx service
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
