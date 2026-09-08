@@ -22,30 +22,3 @@
     ansible-playbook -i Inventory/prod.yml site.yml --diff
 
 
-#### Шаг 4: Инициализируем Git и отправляем на GitHub (через SSH!)
-Выполни эти команды по очереди. **Обрати внимание:** мы используем `git@github.com`, чтобы Git не спрашивал пароль.
-
-
-# 1. Удаляем старый git, чтобы начать чисто (не бойся, коммиты ролей уже на GitHub)
-rm -rf .git
-
-# 2. Инициализируем новый репозиторий
-git init
-
-# 3. Переименовываем ветку в main
-git branch -M main
-
-# 4. Добавляем удаленный репозиторий через SSH (ВАЖНО!)
-git remote add origin git@github.com:Warret/ansible-04-role-playbook.git
-
-# 5. Добавляем все файлы
-git add .
-
-# 6. Делаем коммит
-git commit -m "feat: ansible-04-role playbook with external dependencies"
-
-# 7. Ставим тег версии
-git tag 1.0.0
-
-# 8. Отправляем на GitHub (если спросит про fingerprint, пиши yes)
-git push -u origin main --tags
