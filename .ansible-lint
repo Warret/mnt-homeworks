@@ -1,0 +1,6 @@
+---
+exclude_paths:
+  - roles/clickhouse
+
+skip_list:
+  - role-name  # Пропускаем ошибку имени, так как задание требует "vector-role"
