@@ -1,0 +1,45 @@
+---
+- name: Verify
+  hosts: all
+  tasks:
+    - name: Check if vector package is installed
+      ansible.builtin.package:
+        name: vector
+        state: present
+      register: vector_package
+      changed_when: false
+
+    - name: Assert that vector package is installed
+      ansible.builtin.assert:
+        that:
+          - vector_package.state == 'present'
+        fail_msg: "Vector package is not installed!"
+        success_msg: "Vector package is successfully installed."
+
+    - name: Check if vector service is running and enabled
+      ansible.builtin.service:
+        name: vector
+        state: started
+        enabled: true
+      register: vector_service
+      changed_when: false
+
+    - name: Assert that vector service is running
+      ansible.builtin.assert:
+        that:
+          - vector_service.state == 'started'
+          - vector_service.enabled == true
+        fail_msg: "Vector service is not running or not enabled!"
+        success_msg: "Vector service is running and enabled."
+
+    - name: Check if vector config file exists
+      ansible.builtin.stat:
+        path: /etc/vector/vector.yaml
+      register: vector_config
+
+    - name: Assert that vector config exists
+      ansible.builtin.assert:
+        that:
+          - vector_config.stat.exists
+        fail_msg: "Vector configuration file does not exist!"
+        success_msg: "Vector configuration file exists."

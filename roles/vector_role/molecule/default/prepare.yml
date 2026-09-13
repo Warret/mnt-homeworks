@@ -1,0 +1,27 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Ensure /tmp exists with correct permissions
+      ansible.builtin.file:
+        path: /tmp
+        state: directory
+        mode: '1777'
+
+    - name: Ensure basic packages are present (Debian/Ubuntu)
+      ansible.builtin.apt:
+        name:
+          - python3
+          - sudo
+        state: present
+        update_cache: true
+      when: ansible_os_family == "Debian"
+
+    - name: Ensure basic packages are present (RedHat/Rocky)
+      ansible.builtin.dnf:
+        name:
+          - python3
+          - sudo
+        state: present
+      when: ansible_os_family == "RedHat"

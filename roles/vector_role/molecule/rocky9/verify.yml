@@ -1,0 +1,54 @@
+---
+- name: Verify
+  hosts: rocky9
+  tasks:
+    - name: Check if vector binary exists
+      ansible.builtin.command: which vector
+      register: vector_binary
+      changed_when: false
+      failed_when: vector_binary.rc != 0
+
+    - name: Assert that vector binary exists
+      ansible.builtin.assert:
+        that:
+          - vector_binary.rc == 0
+        fail_msg: "Vector binary is not found in PATH!"
+        success_msg: "Vector binary is successfully installed."
+
+    - name: Check vector version
+      ansible.builtin.command: vector --version
+      register: vector_version
+      changed_when: false
+      failed_when: vector_version.rc != 0
+
+    - name: Assert that vector version command works
+      ansible.builtin.assert:
+        that:
+          - vector_version.rc == 0
+        fail_msg: "Vector version command failed!"
+        success_msg: "Vector is working. Version: {{ vector_version.stdout }}"
+
+    - name: Check if vector service is active
+      ansible.builtin.command: systemctl is-active vector
+      register: vector_service_status
+      changed_when: false
+      failed_when: vector_service_status.stdout != "active"
+
+    - name: Assert that vector service is active
+      ansible.builtin.assert:
+        that:
+          - vector_service_status.stdout == "active"
+        fail_msg: "Vector service is not active!"
+        success_msg: "Vector service is active and running."
+
+    - name: Check if vector config file exists
+      ansible.builtin.stat:
+        path: /etc/vector/vector.yaml
+      register: vector_config
+
+    - name: Assert that vector config exists
+      ansible.builtin.assert:
+        that:
+          - vector_config.stat.exists
+        fail_msg: "Vector configuration file does not exist!"
+        success_msg: "Vector configuration file exists."

@@ -1,0 +1,8 @@
+---
+- name: Converge
+  hosts: ubuntu24
+  become: true
+  tasks:
+    - name: Include vector_role
+      ansible.builtin.include_role:
+        name: "../../.."

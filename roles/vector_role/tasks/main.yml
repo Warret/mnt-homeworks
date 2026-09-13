@@ -1,0 +1,55 @@
+---
+- name: Install ca-certificates (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name: ca-certificates
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Install ca-certificates (RedHat/CentOS)
+  ansible.builtin.yum:
+    name: ca-certificates
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Download Vector package (Debian/Ubuntu)
+  ansible.builtin.get_url:
+    url: "https://packages.timber.io/vector/{{ vector_version }}/vector_{{ vector_version }}-1_amd64.deb"
+    dest: "/tmp/vector.deb"
+    mode: '0644'
+  when: ansible_os_family == "Debian"
+
+- name: Download Vector package (RedHat/CentOS)
+  ansible.builtin.get_url:
+    url: "https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-1.x86_64.rpm"
+    dest: "/tmp/vector.rpm"
+    mode: '0644'
+  when: ansible_os_family == "RedHat"
+
+- name: Install Vector package (Debian/Ubuntu)
+  ansible.builtin.apt:
+    deb: "/tmp/vector.deb"
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Install Vector package (RedHat/CentOS)
+  ansible.builtin.yum:
+    name: "/tmp/vector.rpm"
+    state: present
+    disable_gpg_check: true
+  when: ansible_os_family == "RedHat"
+
+- name: Deploy Vector configuration from template
+  ansible.builtin.template:
+    src: vector.yaml.j2
+    dest: /etc/vector/vector.yaml
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart vector
+
+- name: Start and enable Vector service
+  ansible.builtin.service:
+    name: vector
+    state: started
+    enabled: true
