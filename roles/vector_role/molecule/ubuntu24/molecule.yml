@@ -10,7 +10,7 @@ provisioner:
   inventory:
     host_vars:
       ubuntu24:
-        ansible_host: 103.76.52.134
+        ansible_host: 89.169.163.82
         ansible_user: ubuntu
         ansible_ssh_private_key_file: ~/.ssh/id_rsa
         ansible_python_interpreter: /usr/bin/python3
